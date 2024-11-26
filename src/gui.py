@@ -17,15 +17,15 @@ def create_gui():
     root = Tk()
     root.title("OCR - Extractor de Texto")
 
-    # Etiqueta de instrucciones
+    # ETIQUETAS
     label = Label(root, text="Sube una o varias imágenes para extraer el texto:")
     label.pack()
 
-    # Botón para subir imágenes
+    # BOTON
     upload_button = Button(root, text="Subir Imágenes", command=lambda: upload_images(output_text))
     upload_button.pack()
 
-    # Área de texto para mostrar el texto extraído
+    # TEXTO
     output_text = Text(root, height=20, width=50)
     output_text.pack()
 
