@@ -2,6 +2,7 @@ from tkinter import Tk, Label, Button, filedialog, Text
 from ocr import ocr_core, convert_to_print
 from database import save_to_db
 
+#Subir imagenes
 def upload_images(output_text):
     file_paths = filedialog.askopenfilenames()
     if file_paths:
