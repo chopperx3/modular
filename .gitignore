@@ -1,0 +1,45 @@
+# -----------------------------
+# Python / FastAPI
+# -----------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.db
+.env
+.venv/
+venv/
+ENV/
+uploads/
+*.log
+
+# -----------------------------
+# Flutter / Dart
+# -----------------------------
+.dart_tool/
+.packages
+.pub-cache/
+build/
+flutter_ocr_app/.metadata
+
+# Generated files
+**/GeneratedPluginRegistrant.java
+**/GeneratedPluginRegistrant.swift
+
+# -----------------------------
+# Android Studio / Gradle
+# -----------------------------
+.gradle/
+local.properties
+.idea/
+*.iml
+*.apk
+*.ap_
+
+# -----------------------------
+# Windows / macOS / Linux
+# -----------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
