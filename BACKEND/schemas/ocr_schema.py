@@ -6,5 +6,7 @@ class OCRResultSchema(BaseModel):
     filename: str
     extracted_text: str
     timestamp: datetime
+    doc_type_id: int | None = None
+    doc_type_label: str | None = None
 
-    model_config = ConfigDict(from_attributes=True)  # reemplaza a orm_mode=True en Pydantic v2
+    model_config = ConfigDict(from_attributes=True)

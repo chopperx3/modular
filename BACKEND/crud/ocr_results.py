@@ -1,13 +1,17 @@
 from sqlalchemy.orm import Session
 from database import OCRResult
-from datetime import datetime
 
-def save_result(db: Session, filename: str, text: str):
-    ocr_result = OCRResult(filename=filename, extracted_text=text, timestamp=datetime.utcnow())
-    db.add(ocr_result)
+def save_result(db: Session, filename: str, text: str, doc_type_id: int | None, doc_type_label: str | None):
+    rec = OCRResult(
+        filename=filename,
+        extracted_text=text,
+        doc_type_id=doc_type_id,
+        doc_type_label=doc_type_label
+    )
+    db.add(rec)
     db.commit()
-    db.refresh(ocr_result)
-    return ocr_result
+    db.refresh(rec)
+    return rec
 
 def get_all_results(db: Session):
-    return db.query(OCRResult).all()
+    return db.query(OCRResult).order_by(OCRResult.id.desc()).all()
