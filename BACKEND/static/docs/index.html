@@ -1,0 +1,279 @@
+﻿<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MODULAR OCR — UI</title>
+<style>
+:root{
+  --bg:#0f1217;--panel:#161a22;--muted:#9ca3af;--acc:#6aa7ff;--acc2:#a78bfa;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;
+  --text:#e5e7eb;--soft:#1f2430;--chip:#232938;--chip-on:#2e3650;
+  --radius:14px
+}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+.wrap{max-width:880px;margin:26px auto;padding:0 16px}
+h1{margin:0 0 18px;font-size:28px;letter-spacing:.3px}
+.panel{background:var(--panel);border:1px solid #202636;border-radius:var(--radius);padding:16px;margin:12px 0}
+.grid{display:grid;gap:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+label.small{font-size:12px;color:var(--muted)}
+input[type=text]{width:100%;background:var(--soft);border:1px solid #242a3a;color:var(--text);padding:10px 12px;border-radius:10px;outline:none}
+select{background:var(--soft);border:1px solid #242a3a;color:var(--text);padding:10px 12px;border-radius:10px;outline:none;min-width:220px}
+button{appearance:none;border:0;border-radius:10px;padding:10px 14px;background:#22304a;color:#eaf2ff;cursor:pointer;transition:.15s}
+button:hover{filter:brightness(1.07)}
+button.primary{background:linear-gradient(135deg,var(--acc),#4c82ff)}
+button.ghost{background:var(--soft);color:#d5def9}
+button.warn{background:#3a2a09;color:#ffe6b3}
+button.success{background:#12361f;color:#b5f2c7}
+button:disabled{opacity:.45;cursor:not-allowed}
+.chips{display:flex;gap:8px}
+.chip{background:var(--chip);padding:8px 12px;border-radius:999px;border:1px solid #2a3042;color:#c9d2f5;cursor:pointer;user-select:none}
+.chip.on{background:var(--chip-on);border-color:#3b4260}
+.switch{display:inline-flex;align-items:center;gap:8px}
+.switch input{appearance:none;width:42px;height:24px;border-radius:999px;background:#354158;position:relative;outline:none;cursor:pointer;border:1px solid #3f4a63}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#cdd6f7;transition:.15s}
+.switch input:checked{background:#5b64ff}
+.switch input:checked::after{left:21px;background:#fff}
+.drop{border:1.8px dashed #2a3145;background:#12161f;padding:14px;border-radius:12px;min-height:130px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.drop.drag{border-color:#6aa7ff;background:#0f1522}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.preview{max-width:100%;max-height:270px;border-radius:10px;display:block;margin:auto}
+.kv{font:12px/1.3 ui-monospace,SFMono-Regular,Consolas,Menlo,monospace;color:#b9c1d9;word-break:break-all}
+pre{background:#0c0f14;border:1px solid #1a2130;border-radius:12px;padding:12px;white-space:pre-wrap;word-break:break-word;max-height:360px;overflow:auto}
+.badge{display:inline-flex;align-items:center;gap:6px;font:12px/1 ui-monospace; padding:6px 10px;border:1px solid #2a3145;border-radius:999px;background:#151a24;color:#c9d2f5}
+.link{color:#88b2ff;text-decoration:none}
+.footer{opacity:.7;font-size:12px;text-align:center;padding:18px 0}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1a2333;border:1px solid #2a3042;color:#d7e2ff;padding:10px 14px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:.2s}
+.toast.on{opacity:1}
+.spinner{display:none;position:fixed;inset:0;background:rgba(6,8,12,.5);backdrop-filter:blur(2px);z-index:50;align-items:center;justify-content:center}
+.spinner.on{display:flex}
+.spin{width:44px;height:44px;border:4px solid #3a4763;border-top-color:#7ea8ff;border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+hr{border:0;border-top:1px solid #232a3a;margin:12px 0}
+</style>
+
+<div class="wrap">
+  <h1>MODULAR OCR — UI</h1>
+
+  <div class="panel grid">
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:1 1 320px">
+        <label class="small">URL de la API (http://host:8000)</label>
+        <input id="api" type="text" placeholder="http://127.0.0.1:8000">
+      </div>
+      <div>
+        <label class="small">Idiomas</label>
+        <div class="chips" id="langs">
+          <div class="chip on" data-v="es">ES</div>
+          <div class="chip" data-v="en">EN</div>
+        </div>
+      </div>
+      <div>
+        <label class="small">Manuscrita</label><br>
+        <label class="switch"><input id="hand" type="checkbox"><span></span></label>
+      </div>
+      <div>
+        <label class="small">Tipo (opcional)</label><br>
+        <select id="dtype">
+          <option value="">— Sin clasificar —</option>
+          <option value="1">Factura/Recibo</option>
+          <option value="2">Identificación</option>
+          <option value="3">Examen</option>
+          <option value="4">Carta/Oficio</option>
+          <option value="99">Otro</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="drop" id="drop">
+      <input id="file" type="file" accept="image/*,.png,.jpg,.jpeg,.webp,.pdf" />
+      <div class="kv">Arrastra aquí tu imagen o haz clic para seleccionar</div>
+      <img id="preview" class="preview" style="display:none">
+    </div>
+
+    <div class="row">
+      <button class="ghost" id="clear">Limpiar</button>
+      <div style="flex:1"></div>
+      <button id="process" class="primary">Enviar a OCR</button>
+      <button id="renew" class="success" disabled>Renovar</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="row" style="align-items:center">
+      <span class="badge" id="meta">ID: — • Archivo: —</span>
+      <div style="flex:1"></div>
+      <div class="tools">
+        <button class="ghost" id="copyText">Copiar texto</button>
+        <button class="ghost" id="dlTxt">Descargar .txt</button>
+        <button class="ghost" id="toggleJson">Ver JSON</button>
+      </div>
+    </div>
+    <hr>
+    <div>
+      <label class="small">Texto detectado</label>
+      <pre id="outText">—</pre>
+    </div>
+    <div id="jsonWrap" style="display:none">
+      <label class="small">Respuesta JSON</label>
+      <pre id="outJson">{}</pre>
+    </div>
+    <div id="renewWrap" style="display:none">
+      <hr>
+      <label class="small">Renovado</label>
+      <div class="row" style="align-items:center">
+        <a id="docxLink" class="link" target="_blank">Abrir DOCX</a>
+        <span style="opacity:.5">•</span>
+        <a id="txtLink" class="link" target="_blank">Abrir TXT</a>
+      </div>
+      <div id="fieldsBlock" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="footer">Tip: en emulador Android usa la URL <code>http://10.0.2.2:8000</code></div>
+</div>
+
+<div class="spinner" id="spinner"><div class="spin"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const apiInput = $('#api');
+const langsEl  = $('#langs');
+const handEl   = $('#hand');
+const dtypeEl  = $('#dtype');
+const fileEl   = $('#file');
+const dropEl   = $('#drop');
+const prevEl   = $('#preview');
+const processBtn = $('#process');
+const renewBtn   = $('#renew');
+const clearBtn   = $('#clear');
+const outText  = $('#outText');
+const outJson  = $('#outJson');
+const jsonWrap = $('#jsonWrap');
+const metaEl   = $('#meta');
+const renewWrap= $('#renewWrap');
+const docxLink = $('#docxLink');
+const txtLink  = $('#txtLink');
+const fieldsBlock = $('#fieldsBlock');
+const spinner  = $('#spinner');
+const toast    = $('#toast');
+
+let last = { id:null, filename:null, text:"", json:null, docx:null, txt:null };
+
+function spin(on){ spinner.classList.toggle('on', !!on); }
+function tip(msg){ toast.textContent = msg; toast.classList.add('on'); setTimeout(()=>toast.classList.remove('on'),1700); }
+function baseUrl(){
+  let v = apiInput.value.trim();
+  if(!v) v = location.origin;
+  return v.replace(/\/+$/,'');
+}
+function activeLangs(){
+  return [...langsEl.querySelectorAll('.chip.on')].map(x=>x.dataset.v).join(',');
+}
+function setPreview(file){
+  if(!file){ prevEl.style.display='none'; return; }
+  if(file.type.startsWith('image/')){
+    const r = new FileReader();
+    r.onload = e => { prevEl.src = e.target.result; prevEl.style.display='block'; }
+    r.readAsDataURL(file);
+  } else {
+    prevEl.style.display='none';
+  }
+}
+function setMeta(){
+  const id = last.id ?? '—', fn = last.filename ?? '—';
+  metaEl.textContent = `ID: ${id} • Archivo: ${fn}`;
+}
+function resetRenew(){
+  renewWrap.style.display='none';
+  docxLink.removeAttribute('href');
+  txtLink.removeAttribute('href');
+  fieldsBlock.innerHTML = '';
+}
+function setJsonVisible(v){ jsonWrap.style.display = v ? 'block' : 'none'; }
+
+langsEl.addEventListener('click',e=>{
+  const t = e.target.closest('.chip'); if(!t) return;
+  t.classList.toggle('on');
+});
+
+dropEl.addEventListener('dragover',e=>{e.preventDefault(); dropEl.classList.add('drag');});
+dropEl.addEventListener('dragleave',()=>dropEl.classList.remove('drag'));
+dropEl.addEventListener('drop',e=>{
+  e.preventDefault(); dropEl.classList.remove('drag');
+  const f = e.dataTransfer.files?.[0]; if(f){ fileEl.files = e.dataTransfer.files; setPreview(f); }
+});
+fileEl.addEventListener('change',e=>{
+  const f = e.target.files?.[0]; setPreview(f);
+});
+
+clearBtn.addEventListener('click',()=>{
+  fileEl.value = ''; setPreview(null);
+  outText.textContent = '—'; outJson.textContent = '{}'; setJsonVisible(false);
+  last = { id:null, filename:null, text:"", json:null, docx:null, txt:null };
+  setMeta(); renewBtn.disabled = true; resetRenew();
+});
+
+$('#copyText').addEventListener('click',async()=>{
+  try{ await navigator.clipboard.writeText(outText.textContent || ''); tip('Copiado'); }catch{ tip('No se pudo copiar'); }
+});
+$('#dlTxt').addEventListener('click',()=>{
+  const blob = new Blob([outText.textContent||''], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (last.filename||'resultado')+'.txt'; a.click(); URL.revokeObjectURL(a.href);
+});
+$('#toggleJson').addEventListener('click',()=> setJsonVisible(jsonWrap.style.display==='none'));
+
+processBtn.addEventListener('click', async ()=>{
+  const f = fileEl.files?.[0];
+  if(!f){ tip('Selecciona un archivo'); return; }
+  const fd = new FormData();
+  fd.append('file', f);
+  fd.append('lang', activeLangs() || 'es,en');
+  fd.append('mode', handEl.checked ? 'handwriting' : '');
+  if(dtypeEl.value) fd.append('doc_type_id', dtypeEl.value);
+
+  spin(true); resetRenew();
+  try{
+    const res = await fetch(baseUrl() + '/ocr/', { method:'POST', body:fd });
+    const js = await res.json();
+    if(!res.ok) throw new Error(js?.detail || res.statusText);
+    last.id = js.id; last.filename = js.filename; last.text = js.text || ''; last.json = js;
+    outText.textContent = last.text || '—';
+    outJson.textContent = JSON.stringify(js, null, 2);
+    setMeta(); setJsonVisible(false); renewBtn.disabled = !last.id;
+    tip('Procesado');
+  }catch(err){
+    tip(String(err));
+  }finally{ spin(false); }
+});
+
+renewBtn.addEventListener('click', async ()=>{
+  if(!last.id){ tip('Sin resultado'); return; }
+  spin(true);
+  try{
+    const q = dtypeEl.value ? ('?doc_type_id='+encodeURIComponent(dtypeEl.value)) : '';
+    const res = await fetch(baseUrl() + '/renew/' + last.id + q, { method:'POST' });
+    const js = await res.json();
+    if(!res.ok) throw new Error(js?.detail || res.statusText);
+    const docx = new URL(js.url_docx, baseUrl()).toString();
+    const txt  = new URL(js.url_txt,  baseUrl()).toString();
+    docxLink.href = docx; txtLink.href = txt; renewWrap.style.display='block';
+    fieldsBlock.innerHTML = '';
+    const f = js.fields || {};
+    const keys = Object.keys(f);
+    if(keys.length){
+      const ul = document.createElement('ul'); ul.style.margin='6px 0'; ul.style.paddingLeft='18px';
+      keys.forEach(k=>{ const li = document.createElement('li'); li.textContent = `${k}: ${f[k]}`; ul.appendChild(li); });
+      fieldsBlock.appendChild(ul);
+    }
+    tip('Renovado listo');
+  }catch(err){ tip(String(err)); }
+  finally{ spin(false); }
+});
+
+(function init(){
+  const guess = location.origin.replace(/\/+$/,'');
+  apiInput.value = guess;
+  setMeta();
+})();
+</script>

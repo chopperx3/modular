@@ -1,45 +1,39 @@
-# -----------------------------
-# Python / FastAPI
-# -----------------------------
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.db
-.env
-.venv/
-venv/
-ENV/
-uploads/
-*.log
-
-# -----------------------------
-# Flutter / Dart
-# -----------------------------
-.dart_tool/
-.packages
-.pub-cache/
-build/
-flutter_ocr_app/.metadata
-
-# Generated files
-**/GeneratedPluginRegistrant.java
-**/GeneratedPluginRegistrant.swift
-
-# -----------------------------
-# Android Studio / Gradle
-# -----------------------------
-.gradle/
-local.properties
-.idea/
-*.iml
-*.apk
-*.ap_
-
-# -----------------------------
-# Windows / macOS / Linux
-# -----------------------------
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+@'
+# OS / editores
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Backend (FastAPI / Python)
+backend/.venv/
+backend/venv/
+backend/__pycache__/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/oc_results.db
+backend/app/out/**          # DOCX/TXT generados
+backend/app/models/**       # caché de EasyOCR
+
+# Flutter / Android
+flutter_ocr_app/.dart_tool/
+flutter_ocr_app/build/
+flutter_ocr_app/.packages
+flutter_ocr_app/ios/Pods/
+flutter_ocr_app/ios/.symlinks/
+flutter_ocr_app/android/.gradle/
+flutter_ocr_app/android/build/
+flutter_ocr_app/android/app/build/
+
+# Logs
+*.log
+'@ | Out-File -Encoding UTF8 .gitignore
+
+BACKEND/app/out/
+
+
+flutter_ocr_app/build/
+
+
+**/__pycache__/
+

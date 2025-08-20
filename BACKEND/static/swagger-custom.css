@@ -1,0 +1,103 @@
+/* Fuente opcional (Inter) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+:root {
+  --brand-bg: #0f1221;
+  --brand-card: #171a2b;
+  --brand-accent: #6c8cff; /* indigo/azure */
+  --brand-text: #eaeefb;
+  --brand-muted: #a4acc4;
+}
+
+html, body {
+  background: var(--brand-bg) !important;
+  color: var(--brand-text) !important;
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important;
+}
+
+/* Header */
+.swagger-ui .topbar {
+  background: transparent !important;
+  border-bottom: 1px solid #242841;
+}
+.swagger-ui .topbar .wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.swagger-ui .topbar .link:before {
+  content: "";
+  display: inline-block;
+  width: 28px; height: 28px;
+  background: url('/static/logo.svg') no-repeat center / contain;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.swagger-ui .topbar .download-url-wrapper input[type=text] {
+  background: #0d1020 !important;
+  color: var(--brand-text) !important;
+  border: 1px solid #2a2f52 !important;
+}
+
+/* Cards & panels */
+.swagger-ui .info,
+.swagger-ui .opblock,
+.swagger-ui .scheme-container,
+.swagger-ui .models,
+.swagger-ui .model-box {
+  background: var(--brand-card) !important;
+  border-radius: 14px !important;
+  border: 1px solid #242841 !important;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.25) !important;
+}
+
+/* Tags (grupos de endpoints) */
+.swagger-ui .opblock-tag {
+  color: var(--brand-text) !important;
+  background: transparent !important;
+  border-bottom: 1px solid #242841 !important;
+  padding: 12px 0 !important;
+}
+
+/* Botones */
+.swagger-ui .btn {
+  border-radius: 999px !important;
+  border: 1px solid #2a2f52 !important;
+  background: #12162b !important;
+  color: var(--brand-text) !important;
+}
+.swagger-ui .btn.execute {
+  background: var(--brand-accent) !important;
+  color: #0c1020 !important;
+  border: none !important;
+}
+
+/* Inputs */
+.swagger-ui input[type=text],
+.swagger-ui textarea,
+.swagger-ui select {
+  background: #0d1020 !important;
+  color: var(--brand-text) !important;
+  border: 1px solid #2a2f52 !important;
+}
+
+/* Links y acentos */
+.swagger-ui a, .swagger-ui .tab li {
+  color: var(--brand-accent) !important;
+}
+.swagger-ui .opblock .opblock-summary-method {
+  background: #1f2542 !important;
+  border-radius: 8px !important;
+}
+
+/* Código y respuestas */
+.swagger-ui .response-col_description__inner div.markdown,
+.swagger-ui .highlight-code {
+  background: #0b0e1a !important;
+  border: 1px solid #242841 !important;
+}
+
+/* Ocultar el mega panel de modelos por defecto (igual controlado por -1) */
+.swagger-ui section.models.is-open {
+  display: none !important;
+}
