@@ -3,7 +3,6 @@ from sqlalchemy import Integer, String, Text, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from .database import Base
 
-# RESULTADOS
 class OCRResult(Base):
     __tablename__ = "ocr_results"
 

@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Dict
 from pydantic import BaseModel
 
-# Respuesta del OCR
 class OCRResponse(BaseModel):
     id: int
     filename: str
@@ -10,11 +9,11 @@ class OCRResponse(BaseModel):
     text: str
     created_at: datetime
     doc_type_id: int | None = None
+    engine: str | None = None
 
     class Config:
         from_attributes = True
 
-# Respuesta del renovador
 class RenewResponse(BaseModel):
     result_id: int
     doc_type_id: int | None = None

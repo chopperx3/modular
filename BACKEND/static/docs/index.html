@@ -101,6 +101,7 @@ hr{border:0;border-top:1px solid #232a3a;margin:12px 0}
   <div class="panel">
     <div class="row" style="align-items:center">
       <span class="badge" id="meta">ID: — • Archivo: —</span>
+      <span class="badge" id="engineBadge" style="display:none"></span>
       <div style="flex:1"></div>
       <div class="tools">
         <button class="ghost" id="copyText">Copiar texto</button>
@@ -151,6 +152,7 @@ const outText  = $('#outText');
 const outJson  = $('#outJson');
 const jsonWrap = $('#jsonWrap');
 const metaEl   = $('#meta');
+const engineBadge = $('#engineBadge');
 const renewWrap= $('#renewWrap');
 const docxLink = $('#docxLink');
 const txtLink  = $('#txtLink');
@@ -158,7 +160,7 @@ const fieldsBlock = $('#fieldsBlock');
 const spinner  = $('#spinner');
 const toast    = $('#toast');
 
-let last = { id:null, filename:null, text:"", json:null, docx:null, txt:null };
+let last = { id:null, filename:null, text:"", json:null, docx:null, txt:null, engine:null };
 
 function spin(on){ spinner.classList.toggle('on', !!on); }
 function tip(msg){ toast.textContent = msg; toast.classList.add('on'); setTimeout(()=>toast.classList.remove('on'),1700); }
@@ -183,6 +185,21 @@ function setPreview(file){
 function setMeta(){
   const id = last.id ?? '—', fn = last.filename ?? '—';
   metaEl.textContent = `ID: ${id} • Archivo: ${fn}`;
+}
+function setEngineBadge(engine){
+  if(!engine){ engineBadge.style.display='none'; return; }
+  let label, bg, fg;
+  if(engine === 'groq'){
+    label = 'Motor: Llama 4 Scout (IA)'; bg = '#12361f'; fg = '#b5f2c7';
+  } else if(engine.includes('fallback')){
+    label = 'Motor: EasyOCR (Groq falló — revisa la consola)'; bg = '#3a2a09'; fg = '#ffe6b3';
+  } else {
+    label = 'Motor: EasyOCR'; bg = '#22304a'; fg = '#cfe0ff';
+  }
+  engineBadge.textContent = label;
+  engineBadge.style.background = bg;
+  engineBadge.style.color = fg;
+  engineBadge.style.display = 'inline-flex';
 }
 function resetRenew(){
   renewWrap.style.display='none';
@@ -210,8 +227,8 @@ fileEl.addEventListener('change',e=>{
 clearBtn.addEventListener('click',()=>{
   fileEl.value = ''; setPreview(null);
   outText.textContent = '—'; outJson.textContent = '{}'; setJsonVisible(false);
-  last = { id:null, filename:null, text:"", json:null, docx:null, txt:null };
-  setMeta(); renewBtn.disabled = true; resetRenew();
+  last = { id:null, filename:null, text:"", json:null, docx:null, txt:null, engine:null };
+  setMeta(); setEngineBadge(null); renewBtn.disabled = true; resetRenew();
 });
 
 $('#copyText').addEventListener('click',async()=>{
@@ -238,10 +255,11 @@ processBtn.addEventListener('click', async ()=>{
     const js = await res.json();
     if(!res.ok) throw new Error(js?.detail || res.statusText);
     last.id = js.id; last.filename = js.filename; last.text = js.text || ''; last.json = js;
+    last.engine = js.engine || null;
     outText.textContent = last.text || '—';
     outJson.textContent = JSON.stringify(js, null, 2);
-    setMeta(); setJsonVisible(false); renewBtn.disabled = !last.id;
-    tip('Procesado');
+    setMeta(); setEngineBadge(last.engine); setJsonVisible(false); renewBtn.disabled = !last.id;
+    tip(last.engine === 'groq' ? 'Procesado con IA' : 'Procesado');
   }catch(err){
     tip(String(err));
   }finally{ spin(false); }

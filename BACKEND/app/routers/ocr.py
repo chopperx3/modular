@@ -1,6 +1,6 @@
 from io import BytesIO
 from typing import Sequence
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Query
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
 from PIL import Image, ImageOps
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -13,7 +13,6 @@ router = APIRouter(prefix="/ocr", tags=["ocr"])
 MAX_MB = 20
 ALLOWED = {"image/png", "image/jpeg", "image/webp", "application/pdf"}
 
-# Prepara la imagen para OCR.
 def _prepare_image(image_bytes: bytes) -> bytes:
     try:
         im = Image.open(BytesIO(image_bytes)).convert("RGB")
@@ -29,31 +28,30 @@ def _prepare_image(image_bytes: bytes) -> bytes:
     except Exception:
         return image_bytes
 
-# Procesa los bytes de imagen o PDF.
-async def _process_bytes(data: bytes, langs: Sequence[str], handwriting: bool) -> str:
+async def _process_bytes(data: bytes, langs: Sequence[str], handwriting: bool) -> tuple[str, str]:
     if len(data) == 0:
-        return ""
-    text: str
-    if data[:5] == b"%PDF-":  # PDF rápido
+        return "", "ninguno"
+    if data[:5] == b"%PDF-":
         try:
             from pdf2image import convert_from_bytes  # type: ignore
         except Exception as e:  # pragma: no cover
             raise HTTPException(status_code=415, detail=f"PDF no soportado ({e})")
         pages = convert_from_bytes(data, dpi=220, fmt="jpeg")
         parts = []
+        engines: set[str] = set()
         for pg in pages:
             out = BytesIO()
             pg.save(out, format="WEBP", quality=95, method=6)
-            parts.append(run_ocr(out.getvalue(), langs=langs, handwriting=handwriting))
+            page_text, engine = run_ocr(out.getvalue(), langs=langs, handwriting=handwriting)
+            engines.add(engine)
+            parts.append(page_text)
         text = "\n\n--- PAGE BREAK ---\n\n".join(p for p in parts if p.strip())
-    else:
-        prepared = _prepare_image(data)
-        text = run_ocr(prepared, langs=langs, handwriting=handwriting)
-    return text
+        return text, ", ".join(sorted(engines))
+    prepared = _prepare_image(data)
+    return run_ocr(prepared, langs=langs, handwriting=handwriting)
 
 async def _upload_core(file: UploadFile, db: Session, lang: str, mode: str, doc_type_id: int | None) -> OCRResponse:
-    # Núcleo de subida.
-    # Validación de archivo
+
     if file.content_type not in ALLOWED:
         raise HTTPException(status_code=415, detail=f"Formato no soportado: {file.content_type}")
     data = await file.read()
@@ -64,7 +62,7 @@ async def _upload_core(file: UploadFile, db: Session, lang: str, mode: str, doc_
     langs: Sequence[str] = [s.strip() for s in (lang or "es,en").split(",") if s.strip()]
 
     try:
-        text = await _process_bytes(data, langs=langs, handwriting=handwriting)
+        text, engine = await _process_bytes(data, langs=langs, handwriting=handwriting)
     except HTTPException:
         raise
     except Exception as e:
@@ -73,11 +71,11 @@ async def _upload_core(file: UploadFile, db: Session, lang: str, mode: str, doc_
         raise HTTPException(status_code=500, detail=f"OCR falló: {e}")
 
     row = OCRResult(
-    filename=file.filename,
-    text=text,
-    estatus="Procesado",
-    doc_type_id=doc_type_id
-)
+        filename=file.filename,
+        text=text,
+        estatus="Procesado",
+        doc_type_id=doc_type_id,
+    )
     db.add(row); db.commit(); db.refresh(row)
 
     return OCRResponse(
@@ -87,20 +85,19 @@ async def _upload_core(file: UploadFile, db: Session, lang: str, mode: str, doc_
         text=row.text or "",
         created_at=row.created_at,
         doc_type_id=row.doc_type_id,
+        engine=engine,
     )
 
 @router.post("", response_model=OCRResponse, include_in_schema=False)
 async def upload_image_no_slash(
     file: UploadFile = File(...), db: Session = Depends(get_db),
-    lang: str = Query("es,en"), mode: str = Query(""), doc_type_id: int | None = Query(None),
+    lang: str = Form("es,en"), mode: str = Form(""), doc_type_id: int | None = Form(None),
 ):
-    # Subida sin barra final.
     return await _upload_core(file, db, lang, mode, doc_type_id)
 
 @router.post("/", response_model=OCRResponse)
 async def upload_image(
     file: UploadFile = File(...), db: Session = Depends(get_db),
-    lang: str = Query("es,en"), mode: str = Query(""), doc_type_id: int | None = Query(None),
+    lang: str = Form("es,en"), mode: str = Form(""), doc_type_id: int | None = Form(None),
 ):
-    # Subida principal.
     return await _upload_core(file, db, lang, mode, doc_type_id)

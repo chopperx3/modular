@@ -1,7 +1,7 @@
 name: flutter_ocr_app
-description: A simple Flutter OCR app to send images to a FastAPI backend.
+description: MODULAR OCR — cliente móvil para digitalización inteligente de documentos manuscritos.
 publish_to: 'none'
-version: 1.0.0+1
+version: 2.0.0+2
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -9,12 +9,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^0.13.6
-  image_picker: ^1.0.4
+  http: ^1.2.2
+  image_picker: ^1.0.7
+  shared_preferences: ^2.2.3
+  intl: ^0.19.0
+  cupertino_icons: ^1.0.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^4.0.0
 
 flutter:
   uses-material-design: true

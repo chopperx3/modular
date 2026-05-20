@@ -23,15 +23,18 @@ def normalize_text(t: str) -> str:
     return re.sub(r"[ \t]{2,}", " ", t).strip()
 
 def parse_generic_fields(text: str) -> Dict[str, str]:
-    u = text.upper(); out: Dict[str, str] = {}
-    def first(p): 
-        m = re.search(p, u, re.I); 
+    haystack = text.upper()
+    out: Dict[str, str] = {}
+
+    def first(pattern: str) -> str:
+        m = re.search(pattern, haystack, re.I)
         return m.group(0) if m else ""
-    if d:=first(GEN_DATE):  out["Fecha"]=d
-    if m:=first(GEN_MONEY): out["Monto"]=m
-    if e:=first(GEN_EMAIL): out["Email"]=e
-    if p:=first(GEN_PHONE): out["Teléfono"]=p
-    if u:=first(GEN_URL):   out["URL"]=u
+
+    if d := first(GEN_DATE):  out["Fecha"]    = d
+    if m := first(GEN_MONEY): out["Monto"]    = m
+    if e := first(GEN_EMAIL): out["Email"]    = e
+    if p := first(GEN_PHONE): out["Teléfono"] = p
+    if url := first(GEN_URL): out["URL"]      = url
     return out
 
 def build_docx(clean_text: str, filename: str, doc_type_id: int | None,
