@@ -33,8 +33,8 @@ async def _process_bytes(data: bytes, langs: Sequence[str], handwriting: bool) -
         return "", "ninguno"
     if data[:5] == b"%PDF-":
         try:
-            from pdf2image import convert_from_bytes  # type: ignore
-        except Exception as e:  # pragma: no cover
+            from pdf2image import convert_from_bytes
+        except Exception as e:
             raise HTTPException(status_code=415, detail=f"PDF no soportado ({e})")
         pages = convert_from_bytes(data, dpi=220, fmt="jpeg")
         parts = []

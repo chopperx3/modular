@@ -222,6 +222,7 @@ class _MetricsTable extends StatelessWidget {
   Widget _winner(double? a, double? b, {bool lowerIsBetter = true}) {
     if (a == null || b == null) return const SizedBox.shrink();
     final aWin = lowerIsBetter ? a < b : a > b;
+    if (!aWin) return const SizedBox.shrink();
     return Icon(
       Icons.emoji_events,
       color: Colors.amber.shade700,

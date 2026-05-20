@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import datetime
@@ -83,7 +82,7 @@ def health():
 
 def _tesseract_available() -> bool:
     try:
-        import pytesseract  # noqa: F401
+        import pytesseract
         return True
     except ImportError:
         return False

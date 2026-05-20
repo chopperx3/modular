@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 
 import '../core/api_client.dart';
 import '../core/settings.dart';
-import '../models/ocr_result.dart';
 import 'result_detail_screen.dart';
 
 class CaptureScreen extends StatefulWidget {
@@ -186,7 +185,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<int?>(
-                      value: _docTypeId,
+                      initialValue: _docTypeId,
                       decoration: const InputDecoration(
                         labelText: 'Tipo de documento (opcional)',
                         prefixIcon: Icon(Icons.category_outlined),
