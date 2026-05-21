@@ -1,17 +1,3 @@
-# =============================================================================
-#  MODULAR OCR - Demo en vivo para la exposicion
-# =============================================================================
-#  Uso:
-#    .\demo.ps1                                          # manuscrita.jpg
-#    .\demo.ps1 "ruta\imagen.jpg"
-#    .\demo.ps1 "ruta\imagen.jpg" "texto esperado"
-#
-#  Lo que hace:
-#    1. Verifica venv y .env.
-#    2. Procesa la imagen con EasyOCR + Tesseract + Groq.
-#    3. Muestra una comparativa lado a lado con CER/WER/F1.
-# =============================================================================
-
 param(
     [string]$Image       = "manuscrita.jpg",
     [string]$GroundTruth = ""
@@ -26,7 +12,6 @@ $VenvPython = Join-Path $RepoRoot ".venv\Scripts\python.exe"
 function Write-Ok($msg)   { Write-Host "  [OK] $msg" -ForegroundColor Green }
 function Write-Err($msg)  { Write-Host "  [X]  $msg" -ForegroundColor Red }
 
-# Validaciones
 if (-not (Test-Path $VenvPython)) {
     Write-Err "No existe el venv en $VenvPython"
     Write-Host "  Crearlo con: python -m venv .venv ; .\.venv\Scripts\pip install -r BACKEND\requirements.txt"
@@ -40,7 +25,6 @@ if (-not (Test-Path (Join-Path $BackendDir ".env"))) {
 }
 Write-Ok ".env presente"
 
-# Resolver ruta de la imagen
 if (-not (Test-Path $Image)) {
     $alt = Join-Path $RepoRoot $Image
     if (Test-Path $alt) {
@@ -53,7 +37,6 @@ if (-not (Test-Path $Image)) {
 $Image = (Resolve-Path $Image).Path
 Write-Ok "Imagen: $Image"
 
-# Llamar al script Python
 Push-Location $BackendDir
 try {
     if ([string]::IsNullOrWhiteSpace($GroundTruth)) {

@@ -1,10 +1,9 @@
-/* Fuente opcional (Inter) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 
 :root {
   --brand-bg: #0f1221;
   --brand-card: #171a2b;
-  --brand-accent: #6c8cff; /* indigo/azure */
+  --brand-accent: #6c8cff;
   --brand-text: #eaeefb;
   --brand-muted: #a4acc4;
 }
@@ -15,7 +14,6 @@ html, body {
   font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important;
 }
 
-/* Header */
 .swagger-ui .topbar {
   background: transparent !important;
   border-bottom: 1px solid #242841;
@@ -39,7 +37,6 @@ html, body {
   border: 1px solid #2a2f52 !important;
 }
 
-/* Cards & panels */
 .swagger-ui .info,
 .swagger-ui .opblock,
 .swagger-ui .scheme-container,
@@ -51,7 +48,6 @@ html, body {
   box-shadow: 0 4px 18px rgba(0,0,0,0.25) !important;
 }
 
-/* Tags (grupos de endpoints) */
 .swagger-ui .opblock-tag {
   color: var(--brand-text) !important;
   background: transparent !important;
@@ -59,7 +55,6 @@ html, body {
   padding: 12px 0 !important;
 }
 
-/* Botones */
 .swagger-ui .btn {
   border-radius: 999px !important;
   border: 1px solid #2a2f52 !important;
@@ -72,7 +67,6 @@ html, body {
   border: none !important;
 }
 
-/* Inputs */
 .swagger-ui input[type=text],
 .swagger-ui textarea,
 .swagger-ui select {
@@ -81,7 +75,6 @@ html, body {
   border: 1px solid #2a2f52 !important;
 }
 
-/* Links y acentos */
 .swagger-ui a, .swagger-ui .tab li {
   color: var(--brand-accent) !important;
 }
@@ -90,14 +83,12 @@ html, body {
   border-radius: 8px !important;
 }
 
-/* Código y respuestas */
 .swagger-ui .response-col_description__inner div.markdown,
 .swagger-ui .highlight-code {
   background: #0b0e1a !important;
   border: 1px solid #242841 !important;
 }
 
-/* Ocultar el mega panel de modelos por defecto (igual controlado por -1) */
 .swagger-ui section.models.is-open {
   display: none !important;
 }

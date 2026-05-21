@@ -1,9 +1,7 @@
-# ── Secrets ─────────────────────────────────────────────────────────────────
 .env
 .env.*
 !.env.example
 
-# ── Python ──────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
@@ -12,12 +10,10 @@ __pycache__/
 venv/
 env/
 
-# ── SQLite ──────────────────────────────────────────────────────────────────
 *.db
 *.sqlite
 *.sqlite3
 
-# ── OCR engine artifacts ────────────────────────────────────────────────────
 app/models/*.pth
 app/models/*.bin
 app/out/
@@ -25,7 +21,6 @@ app/test_images/printed/
 app/test_images/handwritten/
 benchmark_results.json
 
-# ── IDE / OS ────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 .DS_Store

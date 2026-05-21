@@ -2,8 +2,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MODULAR OCR — UI</title>
-<style>
-:root{
+<style>:root{
   --bg:#0f1217;--panel:#161a22;--muted:#9ca3af;--acc:#6aa7ff;--acc2:#a78bfa;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;
   --text:#e5e7eb;--soft:#1f2430;--chip:#232938;--chip-on:#2e3650;
   --radius:14px
@@ -48,8 +47,7 @@ pre{background:#0c0f14;border:1px solid #1a2130;border-radius:12px;padding:12px;
 .spin{width:44px;height:44px;border:4px solid #3a4763;border-top-color:#7ea8ff;border-radius:50%;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 .tools{display:flex;gap:8px;flex-wrap:wrap}
-hr{border:0;border-top:1px solid #232a3a;margin:12px 0}
-</style>
+hr{border:0;border-top:1px solid #232a3a;margin:12px 0}</style>
 
 <div class="wrap">
   <h1>MODULAR OCR — UI</h1>
@@ -136,8 +134,7 @@ hr{border:0;border-top:1px solid #232a3a;margin:12px 0}
 <div class="spinner" id="spinner"><div class="spin"></div></div>
 <div class="toast" id="toast"></div>
 
-<script>
-const $ = s => document.querySelector(s);
+<script>const $ = s => document.querySelector(s);
 const apiInput = $('#api');
 const langsEl  = $('#langs');
 const handEl   = $('#hand');
@@ -293,5 +290,4 @@ renewBtn.addEventListener('click', async ()=>{
   const guess = location.origin.replace(/\/+$/,'');
   apiInput.value = guess;
   setMeta();
-})();
-</script>
+})();</script>

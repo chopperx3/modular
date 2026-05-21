@@ -1,11 +1,9 @@
-# ── Secretos ────────────────────────────────────────────────────────────────
 .env
 .env.*
 !.env.example
 **/.env
 !**/.env.example
 
-# ── Python ──────────────────────────────────────────────────────────────────
 __pycache__/
 **/__pycache__/
 *.py[cod]
@@ -16,19 +14,16 @@ env/
 .pytest_cache/
 .mypy_cache/
 
-# ── Base de datos SQLite ────────────────────────────────────────────────────
 *.db
 *.sqlite
 *.sqlite3
 
-# ── Artefactos del motor OCR (regenerables) ─────────────────────────────────
 BACKEND/app/models/*.pth
 BACKEND/app/models/*.bin
 BACKEND/app/out/
 BACKEND/app/test_images/
 BACKEND/benchmark_results*.json
 
-# ── Flutter / Android ───────────────────────────────────────────────────────
 flutter_ocr_app/.dart_tool/
 flutter_ocr_app/.packages
 flutter_ocr_app/build/
@@ -38,7 +33,6 @@ flutter_ocr_app/android/.gradle/
 flutter_ocr_app/android/build/
 flutter_ocr_app/android/app/build/
 
-# ── OS / editores ───────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 .vscode/
