@@ -23,6 +23,8 @@ from .ocr_engine import get_reader
 from .routers import ocr, results
 from .routers.benchmark import router as benchmark_router
 from .routers.renew import router as renew_router
+from .routers.ws import router as ws_router
+from .ws_hub import hub
 
 Base.metadata.create_all(bind=engine)
 with engine.connect() as conn:
@@ -30,7 +32,12 @@ with engine.connect() as conn:
     cols = [c["name"] for c in inspector.get_columns("ocr_results")]
     if "doc_type_id" not in cols:
         conn.execute(text("ALTER TABLE ocr_results ADD COLUMN doc_type_id INTEGER"))
-        conn.commit()
+    if "request_id" not in cols:
+        conn.execute(text("ALTER TABLE ocr_results ADD COLUMN request_id VARCHAR(64)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_ocr_results_request_id ON ocr_results (request_id)"))
+    if "client_id" not in cols:
+        conn.execute(text("ALTER TABLE ocr_results ADD COLUMN client_id VARCHAR(64)"))
+    conn.commit()
 
 app = FastAPI(
     title="MODULAR OCR API",
@@ -62,6 +69,7 @@ app.include_router(ocr.router)
 app.include_router(results.router)
 app.include_router(renew_router)
 app.include_router(benchmark_router)
+app.include_router(ws_router)
 
 @app.get("/", tags=["health"])
 def root():
@@ -78,6 +86,7 @@ def health():
             "tesseract": _tesseract_available(),
             "groq_vision": bool(os.getenv("GROQ_API_KEY", "").strip()),
         },
+        "websocket": hub.stats(),
     }
 
 def _tesseract_available() -> bool:

@@ -14,6 +14,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _apiCtrl;
+  late TextEditingController _deviceCtrl;
   bool _checking = false;
   String? _healthMsg;
   Color? _healthColor;
@@ -22,11 +23,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _apiCtrl = TextEditingController(text: widget.settings.apiUrl);
+    _deviceCtrl = TextEditingController(text: widget.settings.deviceName);
   }
 
   @override
   void dispose() {
     _apiCtrl.dispose();
+    _deviceCtrl.dispose();
     super.dispose();
   }
 
@@ -37,6 +40,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
     try {
       await widget.settings.setApiUrl(_apiCtrl.text);
+      await widget.settings.setDeviceName(_deviceCtrl.text);
       final h = await widget.api.health();
       if (!mounted) return;
       final engines = (h['engines'] as Map?) ?? {};
@@ -83,6 +87,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         prefixIcon: Icon(Icons.dns_outlined),
                         helperText: 'Emulador Android: 10.0.2.2 · Dispositivo físico: IP de tu PC',
                       ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _deviceCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Nombre de este dispositivo',
+                        prefixIcon: const Icon(Icons.smartphone),
+                        helperText: 'Se muestra a los demás en la pestaña En vivo · ID ${widget.settings.clientId}',
+                      ),
+                      onSubmitted: widget.settings.setDeviceName,
                     ),
                     const SizedBox(height: 10),
                     FilledButton.tonalIcon(

@@ -10,6 +10,8 @@ class OCRResponse(BaseModel):
     created_at: datetime
     doc_type_id: int | None = None
     engine: str | None = None
+    request_id: str | None = None
+    client_id: str | None = None
 
     class Config:
         from_attributes = True

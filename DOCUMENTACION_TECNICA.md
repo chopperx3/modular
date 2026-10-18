@@ -121,16 +121,22 @@ concurrencia. No hay queries SQL crudas.
 | Android nativo (Kotlin) | ❌ Doble esfuerzo (Kotlin + Swift) sin beneficio real. |
 | PWA | ❌ La cámara nativa de Flutter (image_picker) es más fiable que MediaDevices en navegadores. |
 
-### 2.5 Comunicación: HTTP + multipart
+### 2.5 Comunicación: REST + WebSocket
 
-Se evaluaron **sockets TCP/IP crudos** (mencionados en el reporte v1) y se reemplazaron
-por HTTP/REST porque:
-- HTTP atraviesa NAT y proxies (sockets no).
-- Permite caché, autenticación estándar y headers de seguridad.
-- Los frameworks modernos (FastAPI, Flutter http) ya proveen TLS, validación y multiplexing.
+El sistema usa dos canales sobre TCP/IP:
 
-Los sockets siguen presentes conceptualmente: HTTP corre sobre TCP/IP. La capa
-aplicacional se subió un nivel para ganar interoperabilidad.
+- **REST (HTTP + multipart)** para operaciones puntuales: historial, comparativa, renovación y
+  envío simple de imágenes (`POST /ocr`).
+- **WebSocket (`/ws/ocr`)** como canal distribuido en tiempo real entre varios dispositivos y el
+  servidor: cada solicitud lleva un `request_id`, el servidor reporta cola y avance, difunde los
+  resultados a los demás dispositivos conectados, atiende varias solicitudes en paralelo y permite
+  recuperar resultados tras una desconexión.
+
+Se descartaron sockets TCP crudos porque WebSocket conserva una conexión persistente full-duplex
+sobre TCP, pero atraviesa proxies y firewalls como HTTP y tiene soporte nativo en FastAPI y Flutter.
+El protocolo de mensajes, el manejo de concurrencia, desconexiones y errores, y la guía de
+demostración con dispositivos independientes están en
+[`PROTOCOLO_WEBSOCKET.md`](PROTOCOLO_WEBSOCKET.md).
 
 ---
 
