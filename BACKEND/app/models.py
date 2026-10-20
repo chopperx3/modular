@@ -12,3 +12,5 @@ class OCRResult(Base):
     text: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
     doc_type_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    request_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    client_id: Mapped[str | None] = mapped_column(String(64), nullable=True)

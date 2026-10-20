@@ -24,6 +24,7 @@ frente a Tesseract.
 | [`DOCUMENTACION_TECNICA.md`](DOCUMENTACION_TECNICA.md) | Justificación de tecnologías, modelo IA, seguridad, escalabilidad |
 | [`RESULTADOS_BENCHMARK.md`](RESULTADOS_BENCHMARK.md) | Tablas y ejemplos de CER / WER / F1 |
 | [`BACKEND/README.md`](BACKEND/README.md) | Cómo arrancar el servidor y endpoints |
+| [`PROTOCOLO_WEBSOCKET.md`](PROTOCOLO_WEBSOCKET.md) | Canal WebSocket entre dispositivos: mensajes, concurrencia, desconexiones y demo |
 
 ## Quickstart
 
@@ -33,7 +34,7 @@ cd BACKEND
 python -m venv .venv && .venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env       # editar GROQ_API_KEY
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 8000   # 0.0.0.0 para que otros dispositivos se conecten
 
 # App móvil (en otra terminal)
 cd flutter_ocr_app

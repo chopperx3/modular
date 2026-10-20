@@ -5,12 +5,15 @@ import 'package:image_picker/image_picker.dart';
 
 import '../core/api_client.dart';
 import '../core/settings.dart';
+import '../core/socket_client.dart';
+import '../models/ocr_result.dart';
 import 'result_detail_screen.dart';
 
 class CaptureScreen extends StatefulWidget {
   final ApiClient api;
+  final OcrSocketClient socket;
   final AppSettings settings;
-  const CaptureScreen({super.key, required this.api, required this.settings});
+  const CaptureScreen({super.key, required this.api, required this.socket, required this.settings});
 
   @override
   State<CaptureScreen> createState() => _CaptureScreenState();
@@ -22,6 +25,17 @@ class _CaptureScreenState extends State<CaptureScreen> {
   bool _loading = false;
   int? _docTypeId;
   Duration? _lastDuration;
+  String? _stage;
+
+  static const _stageLabels = {
+    'waiting_connection': 'Esperando conexión…',
+    'sent': 'Enviado por socket…',
+    'queued': 'En cola del servidor…',
+    'busy': 'Servidor ocupado, reintentando…',
+    'processing': 'Procesando…',
+    'recognizing': 'Reconociendo texto…',
+    'saving': 'Guardando resultado…',
+  };
 
   static const _docTypes = [
     DropdownMenuItem<int?>(value: null, child: Text('— Sin clasificar —')),
@@ -42,15 +56,31 @@ class _CaptureScreenState extends State<CaptureScreen> {
       _snack('Primero selecciona una imagen');
       return;
     }
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _stage = null;
+    });
     final stop = Stopwatch()..start();
     try {
-      final result = await widget.api.uploadImage(
-        file: File(img.path),
-        langs: widget.settings.langs,
-        handwriting: widget.settings.handwriting,
-        docTypeId: _docTypeId,
-      );
+      final OcrResult result;
+      if (widget.settings.useSocket) {
+        result = await widget.socket.submit(
+          file: File(img.path),
+          langs: widget.settings.langs,
+          handwriting: widget.settings.handwriting,
+          docTypeId: _docTypeId,
+          onProgress: (stage) {
+            if (mounted) setState(() => _stage = stage);
+          },
+        );
+      } else {
+        result = await widget.api.uploadImage(
+          file: File(img.path),
+          langs: widget.settings.langs,
+          handwriting: widget.settings.handwriting,
+          docTypeId: _docTypeId,
+        );
+      }
       stop.stop();
       if (!mounted) return;
       setState(() => _lastDuration = stop.elapsed);
@@ -64,16 +94,30 @@ class _CaptureScreenState extends State<CaptureScreen> {
       ));
     } on ApiException catch (e) {
       _snack('Error ${e.statusCode}: ${_short(e.message)}');
+    } on SocketRequestException catch (e) {
+      _snack('Error ${e.code}: ${_short(e.message)}');
     } catch (e) {
       _snack('Fallo en la petición: $e');
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _stage = null;
+        });
+      }
     }
   }
 
   void _snack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
+
+  String _socketLabel(SocketStatus s) => switch (s) {
+        SocketStatus.connected    => 'Conectado en tiempo real',
+        SocketStatus.connecting   => 'Conectando…',
+        SocketStatus.reconnecting => 'Reconectando…',
+        SocketStatus.disconnected => 'Desconectado',
+      };
 
   String _short(String s) => s.length > 100 ? '${s.substring(0, 100)}…' : s;
 
@@ -183,7 +227,27 @@ class _CaptureScreenState extends State<CaptureScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 4),
+                    AnimatedBuilder(
+                      animation: Listenable.merge([widget.settings, widget.socket]),
+                      builder: (_, __) => SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Enviar por WebSocket'),
+                        subtitle: Text(widget.settings.useSocket
+                            ? _socketLabel(widget.socket.status)
+                            : 'Se usará HTTP (POST /ocr)'),
+                        value: widget.settings.useSocket,
+                        onChanged: (v) {
+                          widget.settings.setUseSocket(v);
+                          if (v) {
+                            widget.socket.connect();
+                          } else {
+                            widget.socket.disconnect();
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     DropdownButtonFormField<int?>(
                       initialValue: _docTypeId,
                       decoration: const InputDecoration(
@@ -210,7 +274,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       )
                     : const Icon(Icons.cloud_upload_outlined),
                 label: Text(
-                  _loading ? 'Procesando…' : 'Procesar imagen',
+                  _loading ? (_stageLabels[_stage] ?? 'Procesando…') : 'Procesar imagen',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ),

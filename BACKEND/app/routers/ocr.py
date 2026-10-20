@@ -1,3 +1,4 @@
+import asyncio
 from io import BytesIO
 from typing import Sequence
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
@@ -7,6 +8,7 @@ from ..database import get_db
 from ..models import OCRResult
 from ..schemas import OCRResponse
 from ..ocr_engine import run_ocr
+from ..ws_hub import hub
 
 router = APIRouter(prefix="/ocr", tags=["ocr"])
 
@@ -28,7 +30,7 @@ def _prepare_image(image_bytes: bytes) -> bytes:
     except Exception:
         return image_bytes
 
-async def _process_bytes(data: bytes, langs: Sequence[str], handwriting: bool) -> tuple[str, str]:
+def process_bytes_sync(data: bytes, langs: Sequence[str], handwriting: bool) -> tuple[str, str]:
     if len(data) == 0:
         return "", "ninguno"
     if data[:5] == b"%PDF-":
@@ -49,6 +51,9 @@ async def _process_bytes(data: bytes, langs: Sequence[str], handwriting: bool) -
         return text, ", ".join(sorted(engines))
     prepared = _prepare_image(data)
     return run_ocr(prepared, langs=langs, handwriting=handwriting)
+
+async def _process_bytes(data: bytes, langs: Sequence[str], handwriting: bool) -> tuple[str, str]:
+    return await asyncio.to_thread(process_bytes_sync, data, langs, handwriting)
 
 async def _upload_core(file: UploadFile, db: Session, lang: str, mode: str, doc_type_id: int | None) -> OCRResponse:
 
@@ -78,7 +83,7 @@ async def _upload_core(file: UploadFile, db: Session, lang: str, mode: str, doc_
     )
     db.add(row); db.commit(); db.refresh(row)
 
-    return OCRResponse(
+    response = OCRResponse(
         id=row.id,
         filename=row.filename,
         estatus=row.estatus,
@@ -87,6 +92,8 @@ async def _upload_core(file: UploadFile, db: Session, lang: str, mode: str, doc_
         doc_type_id=row.doc_type_id,
         engine=engine,
     )
+    await hub.broadcast_result(response.model_dump(mode="json"), origin_client_id=None, via="rest")
+    return response
 
 @router.post("", response_model=OCRResponse, include_in_schema=False)
 async def upload_image_no_slash(
