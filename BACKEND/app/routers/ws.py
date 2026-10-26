@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import binascii
+import contextlib
 import json
 import logging
 import os
@@ -14,6 +15,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 
+from ..cluster import cluster
 from ..database import SessionLocal
 from ..models import OCRResult
 from ..schemas import OCRResponse
@@ -60,9 +62,11 @@ def _row_to_response(row: OCRResult, engine: str | None = None) -> dict[str, Any
         engine=engine,
         request_id=row.request_id,
         client_id=row.client_id,
+        worker_id=row.worker_id,
     ).model_dump(mode="json")
 
-def _save_row(job: Job, text: str | None, estatus: str, doc_type_id: int | None, engine: str | None) -> dict[str, Any]:
+def _save_row(job: Job, text: str | None, estatus: str, doc_type_id: int | None, engine: str | None,
+              worker_id: str | None = None) -> dict[str, Any]:
     db = SessionLocal()
     try:
         row = OCRResult(
@@ -72,6 +76,7 @@ def _save_row(job: Job, text: str | None, estatus: str, doc_type_id: int | None,
             doc_type_id=doc_type_id,
             request_id=job.request_id,
             client_id=job.client_id,
+            worker_id=worker_id,
         )
         db.add(row); db.commit(); db.refresh(row)
         return _row_to_response(row, engine)
@@ -103,12 +108,16 @@ async def _run_job(job: Job, data: bytes, langs: list[str], handwriting: bool, d
     t0 = time.perf_counter()
     ok = False
     try:
-        async with hub.semaphore:
+        # Con workers conectados la cola la maneja el coordinador; sin ellos, el
+        # semáforo limita cuántas imágenes procesa este servidor a la vez.
+        limiter = contextlib.nullcontext() if cluster.has_workers() else hub.semaphore
+        async with limiter:
             job.status = "processing"
             await hub.deliver(job.client_id, {"type": "progress", "request_id": job.request_id,
                                               "stage": "recognizing"})
             try:
-                text, engine = await asyncio.to_thread(process_bytes_sync, data, langs, handwriting)
+                text, engine, worker_id = await cluster.process(data, langs, handwriting,
+                                                                local_fn=process_bytes_sync)
             except Exception as e:
                 detail = e.detail if isinstance(e, HTTPException) else str(e)
                 logger.warning("OCR WS falló request=%s: %s", job.request_id, detail)
@@ -119,8 +128,8 @@ async def _run_job(job: Job, data: bytes, langs: list[str], handwriting: bool, d
                 return
 
             await hub.deliver(job.client_id, {"type": "progress", "request_id": job.request_id,
-                                              "stage": "saving"})
-            result = await asyncio.to_thread(_save_row, job, text, "Procesado", doc_type_id, engine)
+                                              "stage": "saving", "worker_id": worker_id})
+            result = await asyncio.to_thread(_save_row, job, text, "Procesado", doc_type_id, engine, worker_id)
             job.elapsed_ms = round((time.perf_counter() - t0) * 1000.0, 1)
             job.result = result
             job.status = "done"

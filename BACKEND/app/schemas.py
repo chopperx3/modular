@@ -12,6 +12,7 @@ class OCRResponse(BaseModel):
     engine: str | None = None
     request_id: str | None = None
     client_id: str | None = None
+    worker_id: str | None = None
 
     class Config:
         from_attributes = True

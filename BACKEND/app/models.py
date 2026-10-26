@@ -14,3 +14,4 @@ class OCRResult(Base):
     doc_type_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     request_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     client_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    worker_id: Mapped[str | None] = mapped_column(String(64), nullable=True)

@@ -1,13 +1,11 @@
-import asyncio
-from io import BytesIO
 from typing import Sequence
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
-from PIL import Image, ImageOps
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import OCRResult
 from ..schemas import OCRResponse
-from ..ocr_engine import run_ocr
+from ..cluster import cluster
+from ..pipeline import _prepare_image, process_bytes_sync  # noqa: F401
 from ..ws_hub import hub
 
 router = APIRouter(prefix="/ocr", tags=["ocr"])
@@ -15,45 +13,8 @@ router = APIRouter(prefix="/ocr", tags=["ocr"])
 MAX_MB = 20
 ALLOWED = {"image/png", "image/jpeg", "image/webp", "application/pdf"}
 
-def _prepare_image(image_bytes: bytes) -> bytes:
-    try:
-        im = Image.open(BytesIO(image_bytes)).convert("RGB")
-        im = ImageOps.exif_transpose(im)
-        w, h = im.size
-        max_side = 2000
-        if max(w, h) > max_side:
-            r = max_side / float(max(w, h))
-            im = im.resize((int(w * r), int(h * r)))
-        out = BytesIO()
-        im.save(out, format="WEBP", quality=95, method=6)
-        return out.getvalue()
-    except Exception:
-        return image_bytes
-
-def process_bytes_sync(data: bytes, langs: Sequence[str], handwriting: bool) -> tuple[str, str]:
-    if len(data) == 0:
-        return "", "ninguno"
-    if data[:5] == b"%PDF-":
-        try:
-            from pdf2image import convert_from_bytes
-        except Exception as e:
-            raise HTTPException(status_code=415, detail=f"PDF no soportado ({e})")
-        pages = convert_from_bytes(data, dpi=220, fmt="jpeg")
-        parts = []
-        engines: set[str] = set()
-        for pg in pages:
-            out = BytesIO()
-            pg.save(out, format="WEBP", quality=95, method=6)
-            page_text, engine = run_ocr(out.getvalue(), langs=langs, handwriting=handwriting)
-            engines.add(engine)
-            parts.append(page_text)
-        text = "\n\n--- PAGE BREAK ---\n\n".join(p for p in parts if p.strip())
-        return text, ", ".join(sorted(engines))
-    prepared = _prepare_image(data)
-    return run_ocr(prepared, langs=langs, handwriting=handwriting)
-
-async def _process_bytes(data: bytes, langs: Sequence[str], handwriting: bool) -> tuple[str, str]:
-    return await asyncio.to_thread(process_bytes_sync, data, langs, handwriting)
+async def _process_bytes(data: bytes, langs: Sequence[str], handwriting: bool) -> tuple[str, str, str]:
+    return await cluster.process(data, langs, handwriting, local_fn=process_bytes_sync)
 
 async def _upload_core(file: UploadFile, db: Session, lang: str, mode: str, doc_type_id: int | None) -> OCRResponse:
 
@@ -67,7 +28,7 @@ async def _upload_core(file: UploadFile, db: Session, lang: str, mode: str, doc_
     langs: Sequence[str] = [s.strip() for s in (lang or "es,en").split(",") if s.strip()]
 
     try:
-        text, engine = await _process_bytes(data, langs=langs, handwriting=handwriting)
+        text, engine, worker_id = await _process_bytes(data, langs=langs, handwriting=handwriting)
     except HTTPException:
         raise
     except Exception as e:
@@ -80,6 +41,7 @@ async def _upload_core(file: UploadFile, db: Session, lang: str, mode: str, doc_
         text=text,
         estatus="Procesado",
         doc_type_id=doc_type_id,
+        worker_id=worker_id,
     )
     db.add(row); db.commit(); db.refresh(row)
 
@@ -91,6 +53,7 @@ async def _upload_core(file: UploadFile, db: Session, lang: str, mode: str, doc_
         created_at=row.created_at,
         doc_type_id=row.doc_type_id,
         engine=engine,
+        worker_id=row.worker_id,
     )
     await hub.broadcast_result(response.model_dump(mode="json"), origin_client_id=None, via="rest")
     return response

@@ -153,11 +153,15 @@ class OcrHub:
                 break
             del self._jobs[oldest_id]
 
+    def capacity(self) -> int:
+        from .cluster import cluster
+        return max(self.max_workers, cluster.total_slots())
+
     def queue_full(self) -> bool:
-        return self._pending >= self.max_workers + self.max_queue
+        return self._pending >= self.capacity() + self.max_queue
 
     def queue_position(self) -> int:
-        return max(0, self._pending - self.max_workers)
+        return max(0, self._pending - self.capacity())
 
     async def deliver(self, client_id: str, message: dict[str, Any]) -> bool:
         conn = self._by_client.get(client_id)

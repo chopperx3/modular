@@ -16,12 +16,14 @@ try:
 except ImportError:
     pass
 
+from .cluster import cluster
 from .database import Base, engine
 from .middleware import add_middlewares
 from .models import OCRResult
 from .ocr_engine import get_reader
 from .routers import ocr, results
 from .routers.benchmark import router as benchmark_router
+from .routers.cluster import router as cluster_router
 from .routers.renew import router as renew_router
 from .routers.ws import router as ws_router
 from .ws_hub import hub
@@ -37,6 +39,8 @@ with engine.connect() as conn:
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_ocr_results_request_id ON ocr_results (request_id)"))
     if "client_id" not in cols:
         conn.execute(text("ALTER TABLE ocr_results ADD COLUMN client_id VARCHAR(64)"))
+    if "worker_id" not in cols:
+        conn.execute(text("ALTER TABLE ocr_results ADD COLUMN worker_id VARCHAR(64)"))
     conn.commit()
 
 app = FastAPI(
@@ -70,6 +74,7 @@ app.include_router(results.router)
 app.include_router(renew_router)
 app.include_router(benchmark_router)
 app.include_router(ws_router)
+app.include_router(cluster_router)
 
 @app.get("/", tags=["health"])
 def root():
@@ -87,6 +92,7 @@ def health():
             "groq_vision": bool(os.getenv("GROQ_API_KEY", "").strip()),
         },
         "websocket": hub.stats(),
+        "cluster": {k: v for k, v in cluster.status().items() if k != "workers"},
     }
 
 def _tesseract_available() -> bool:
@@ -112,8 +118,15 @@ def _warmup() -> None:
         print(f"[warmup] error: {e}")
 
 @app.on_event("startup")
-def startup_event() -> None:
+async def startup_event() -> None:
     threading.Thread(target=_warmup, daemon=True).start()
+    if os.getenv("CLUSTER_ENABLED", "1").strip().lower() not in ("0", "false", "no", "off"):
+        cluster.listeners.append(hub.broadcast)
+        await cluster.start()
+
+@app.on_event("shutdown")
+async def shutdown_event() -> None:
+    await cluster.stop()
 
 if __name__ == "__main__":
     import uvicorn

@@ -25,6 +25,7 @@ frente a Tesseract.
 | [`RESULTADOS_BENCHMARK.md`](RESULTADOS_BENCHMARK.md) | Tablas y ejemplos de CER / WER / F1 |
 | [`BACKEND/README.md`](BACKEND/README.md) | Cómo arrancar el servidor y endpoints |
 | [`PROTOCOLO_WEBSOCKET.md`](PROTOCOLO_WEBSOCKET.md) | Canal WebSocket entre dispositivos: mensajes, concurrencia, desconexiones y demo |
+| [`CLUSTER_DISTRIBUIDO.md`](CLUSTER_DISTRIBUIDO.md) | Coordinador y workers en varias computadoras: protocolo TCP, reparto de carga y tolerancia a fallos |
 
 ## Quickstart
 
@@ -35,6 +36,9 @@ python -m venv .venv && .venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env       # editar GROQ_API_KEY
 uvicorn app.main:app --host 0.0.0.0 --port 8000   # 0.0.0.0 para que otros dispositivos se conecten
+
+# Workers de OCR (en cada computadora de la red, con la IP del coordinador)
+python -m app.worker --coordinator 192.168.1.10:9000 --id laptop-1
 
 # App móvil (en otra terminal)
 cd flutter_ocr_app
