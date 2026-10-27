@@ -8,7 +8,8 @@ calentamiento que no se cuenta).
 Motores:
   easyocr    -> app.ocr_engine._run_easyocr (mismo codigo que produccion)
   tesseract  -> Tesseract 5, --oem 3 --psm 6, idiomas spa+eng
-  groq       -> app.ocr_engine._run_groq_vision (Llama 4 Scout, produccion)
+  groq       -> app.ocr_engine._run_groq_vision (modelo de vision remoto, solo comparacion)
+  trocr      -> app.trocr_engine.run_trocr (CRAFT + TrOCR local, motor de manuscrito)
 
 Uso (desde BACKEND/):
   python -m benchmark.evaluar --dataset benchmark/datasets/iam_lineas --motores easyocr tesseract
@@ -58,6 +59,9 @@ def _cargar_motor(nombre: str):
     if nombre == "groq":
         from app.ocr_engine import _run_groq_vision
         return _run_groq_vision
+    if nombre == "trocr":
+        from app.trocr_engine import run_trocr
+        return run_trocr
     if nombre == "tesseract":
         import os
         import pytesseract
@@ -82,6 +86,10 @@ def _version_motor(nombre: str) -> str:
         if nombre == "groq":
             from app.ocr_engine import GROQ_MODEL
             return GROQ_MODEL
+        if nombre == "trocr":
+            import transformers
+            from app.trocr_engine import TROCR_BEAMS, TROCR_MODEL
+            return f"{TROCR_MODEL} (beams={TROCR_BEAMS}, transformers {transformers.__version__})"
     except Exception:
         pass
     return "?"
@@ -214,7 +222,7 @@ def reporte() -> str:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", type=Path)
-    ap.add_argument("--motores", nargs="+", choices=["easyocr", "tesseract", "groq"], default=[])
+    ap.add_argument("--motores", nargs="+", choices=["easyocr", "tesseract", "groq", "trocr"], default=[])
     ap.add_argument("--pausa-groq", type=float, default=2.5,
                     help="segundos entre peticiones a Groq (limite gratuito ~30 por minuto)")
     ap.add_argument("--reporte", action="store_true")
@@ -223,7 +231,7 @@ def main() -> None:
     args = ap.parse_args()
 
     if args.todo:
-        motores = args.motores or ["easyocr", "tesseract", "groq"]
+        motores = args.motores or ["easyocr", "tesseract", "trocr"]
         for ds in sorted(p for p in (BASE / "datasets").iterdir() if (p / "manifest.json").exists()):
             for m in motores:
                 correr(ds, m, args.pausa_groq if m == "groq" else 0.0)

@@ -212,9 +212,16 @@ def main() -> None:
     else:
         logger.info("Cargando modelos OCR...")
         ocr_fn = _real_ocr()
-        from .ocr_engine import GROQ_API_KEY, get_reader
+        from .ocr_engine import GROQ_API_KEY, HANDWRITING_ENGINE, get_reader
         get_reader(["es", "en"])
-        engines = ["easyocr"] + (["groq"] if GROQ_API_KEY else [])
+        engines = ["easyocr"]
+        if HANDWRITING_ENGINE in ("trocr", "groq"):
+            from . import trocr_engine
+            if trocr_engine.available():
+                trocr_engine.load()
+                engines.append("trocr")
+        if GROQ_API_KEY and HANDWRITING_ENGINE == "groq":
+            engines.append("groq")
         logger.info("Modelos listos: %s", ", ".join(engines))
 
     async def _main() -> None:

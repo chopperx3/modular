@@ -16,6 +16,8 @@ env/
 
 app/models/*.pth
 app/models/*.bin
+app/models/trocr/
+benchmark/resultados/*.jsonl
 app/out/
 app/test_images/printed/
 app/test_images/handwritten/

@@ -48,9 +48,9 @@ app = FastAPI(
     version="v0.3.0",
     description=(
         "Sistema OCR inteligente para digitalización de documentos manuscritos e "
-        "impresos. Combina EasyOCR (CRAFT + CRNN) y Llama 4 Scout Vision para "
-        "manuscrita compleja, con métricas cuantitativas CER/WER/F1 y comparativa "
-        "frente a Tesseract."
+        "impresos. EasyOCR (CRAFT + CRNN) para texto impreso y TrOCR local "
+        "(Transformer codificador-decodificador) para manuscrito, procesados en "
+        "nodos worker distribuidos, con métricas CER/WER y comparativa frente a Tesseract."
     ),
 )
 
@@ -89,11 +89,17 @@ def health():
         "engines": {
             "easyocr": True,
             "tesseract": _tesseract_available(),
+            "trocr": _trocr_available(),
             "groq_vision": bool(os.getenv("GROQ_API_KEY", "").strip()),
+            "handwriting": os.getenv("HANDWRITING_ENGINE", "trocr"),
         },
         "websocket": hub.stats(),
         "cluster": {k: v for k, v in cluster.status().items() if k != "workers"},
     }
+
+def _trocr_available() -> bool:
+    from .trocr_engine import available
+    return available()
 
 def _tesseract_available() -> bool:
     try:
@@ -116,6 +122,16 @@ def _warmup() -> None:
         print("[warmup] EasyOCR OK (es, en)")
     except Exception as e:
         print(f"[warmup] error: {e}")
+    # El servidor solo usa TrOCR como respaldo cuando no hay workers; cargarlo
+    # de antemano evita que la primera foto manuscrita tarde.
+    if os.getenv("WARMUP_TROCR", "1") == "1" and os.getenv("HANDWRITING_ENGINE", "trocr") in ("trocr", "groq"):
+        try:
+            from .trocr_engine import available, load
+            if available():
+                load()
+                print("[warmup] TrOCR OK")
+        except Exception as e:
+            print(f"[warmup] TrOCR error: {e}")
 
 @app.on_event("startup")
 async def startup_event() -> None:

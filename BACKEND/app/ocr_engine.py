@@ -29,6 +29,10 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
 GROQ_MODEL   = os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct").strip()
 GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
 
+# Motor para modo manuscrito: "trocr" (local, por defecto), "groq" (servicio
+# externo, solo para comparación) o "easyocr".
+HANDWRITING_ENGINE = os.getenv("HANDWRITING_ENGINE", "trocr").strip().lower()
+
 _easyocr_cache: dict[tuple, easyocr.Reader] = {}
 
 def _norm_langs(langs: Iterable[str] | None) -> tuple[str, ...]:
@@ -140,10 +144,17 @@ def _run_easyocr(image_bytes: bytes, langs: Sequence[str] | None) -> str:
 
 def run_ocr(image_bytes: bytes, langs: Sequence[str] | None, handwriting: bool) -> tuple[str, str]:
     if handwriting:
-        try:
-            return _run_groq_vision(image_bytes), "groq"
-        except Exception as e:
-            logger.warning("Groq Vision falló, usando EasyOCR como fallback: %s", e)
+        if HANDWRITING_ENGINE == "groq":
+            try:
+                return _run_groq_vision(image_bytes), "groq"
+            except Exception as e:
+                logger.warning("Groq Vision falló, usando TrOCR local: %s", e)
+        if HANDWRITING_ENGINE in ("trocr", "groq"):
+            try:
+                from .trocr_engine import run_trocr
+                return run_trocr(image_bytes), "trocr"
+            except Exception as e:
+                logger.warning("TrOCR falló, usando EasyOCR como respaldo: %s", e)
             return _run_easyocr(image_bytes, langs), "easyocr (fallback)"
 
     return _run_easyocr(image_bytes, langs), "easyocr"

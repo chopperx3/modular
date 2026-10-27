@@ -3,10 +3,10 @@
 > Proyecto modular CUCEI — Universidad de Guadalajara
 > Eduardo Israel Ramírez Baltazar · Mtra. Martha del Carmen Gutiérrez Salmerón
 
-Sistema distribuido para digitalización de documentos manuscritos e impresos
-mediante OCR clásico (EasyOCR) combinado con un modelo de visión por
-inteligencia artificial (Llama 4 Scout 17B) y comparado cuantitativamente
-frente a Tesseract.
+Sistema distribuido para digitalización de documentos manuscritos e impresos.
+El manuscrito se reconoce localmente con CRAFT + TrOCR (Transformer
+codificador-decodificador) y el impreso con EasyOCR, en nodos worker repartidos
+en varias computadoras, con comparación cuantitativa frente a Tesseract.
 
 ---
 
@@ -25,6 +25,7 @@ frente a Tesseract.
 | [`RESULTADOS_BENCHMARK.md`](RESULTADOS_BENCHMARK.md) | Tablas y ejemplos de CER / WER / F1 |
 | [`BACKEND/README.md`](BACKEND/README.md) | Cómo arrancar el servidor y endpoints |
 | [`PROTOCOLO_WEBSOCKET.md`](PROTOCOLO_WEBSOCKET.md) | Canal WebSocket entre dispositivos: mensajes, concurrencia, desconexiones y demo |
+| [`MODELO_TROCR.md`](MODELO_TROCR.md) | Modelo de IA para manuscrito: segmentación CRAFT, TrOCR, modelo matemático y resultados |
 | [`CLUSTER_DISTRIBUIDO.md`](CLUSTER_DISTRIBUIDO.md) | Coordinador y workers en varias computadoras: protocolo TCP, reparto de carga y tolerancia a fallos |
 
 ## Quickstart
@@ -32,9 +33,9 @@ frente a Tesseract.
 ```bash
 # Backend
 cd BACKEND
-python -m venv .venv && .venv\Scripts\activate
+py -3.11 -m venv .venv && .venv\Scripts\activate    # Python 3.11 (torch/transformers)
 pip install -r requirements.txt
-copy .env.example .env       # editar GROQ_API_KEY
+copy .env.example .env       # HANDWRITING_ENGINE=trocr (local) por defecto
 uvicorn app.main:app --host 0.0.0.0 --port 8000   # 0.0.0.0 para que otros dispositivos se conecten
 
 # Workers de OCR (en cada computadora de la red, con la IP del coordinador)
