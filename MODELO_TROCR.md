@@ -166,6 +166,96 @@ que esos renglones son dudosos.
 usando el conjunto propio dividido por escritor: unos para entrenar y otros,
 que el modelo nunca vio, para medir.
 
+## 8. Afinado en español con renglones sintéticos
+
+El error principal en español es de **idioma**, no de forma de la letra: el
+decodificador nunca vio palabras como "había" o "querían". Para enseñárselas se
+generan renglones sintéticos y se afina el modelo.
+
+### Datos (`entrenamiento/generar_sintetico.py`)
+
+| Elemento | Detalle |
+|---|---|
+| Texto | 545 mil palabras de obras de dominio público: *Don Quijote* (Cervantes), *Marianela* y *Doña Perfecta* (Pérez Galdós), de Project Gutenberg. Se agregan frases con fechas, cantidades y números (6 %). |
+| Exclusión | Se descarta cualquier renglón que comparta 4 palabras seguidas con las hojas de prueba, para no evaluar con texto visto. |
+| Letra | 41 tipografías manuscritas de Google Fonts (licencias OFL/Apache) que incluyen á é í ó ú ü ñ ¿ ¡. Se dibuja palabra por palabra, con espacio y altura variables. |
+| Degradación | Inclinación de la letra (−0.35 a 0.25), rotación (±2°), ondulación del renglón, trazo más grueso o fino, tinta negra/azul/gris, papel blanco a crema, renglón de cuaderno, sombra de luz desigual, ruido, desenfoque, baja resolución y compresión JPEG (calidad 55–95). |
+| Tamaño | 6000 renglones: 5700 de entrenamiento y 300 de validación. |
+| Validación | Los renglones de validación usan **5 tipografías que el entrenamiento no ve**, así se mide si el modelo generaliza a otra letra y no si memorizó una tipografía. |
+
+### Entrenamiento (`entrenamiento/afinar_trocr.py`)
+
+- Se parte de `microsoft/trocr-base-handwritten`.
+- Se minimiza la entropía cruzada de la sección 5. La pérdida se calcula en el
+  script: en transformers 4.57, pasar `labels=` al modelo vuelve a desplazar las
+  etiquetas y la pérdida sale desalineada (16.4 en vez de 0.29 con el modelo sin entrenar).
+- Las etiquetas van **sin** el token `<s>` inicial, porque el modelo publicado
+  genera `</s>` seguido directamente del texto.
+- **Codificador congelado:** se entrenan solo el decodificador y la atención
+  cruzada (247 M de 334 M parámetros). El codificador ya sabe ver trazos; lo
+  que hay que ajustar es el idioma. Así cada paso es más rápido en CPU.
+- AdamW, tasa de aprendizaje 3·10⁻⁵ con calentamiento lineal (5 %) y decaimiento
+  lineal, lote 8 con 2 pasos acumulados (efectivo 16), recorte de gradiente a 1.0, 2 épocas.
+- Se evalúa el CER de validación cada 100 pasos y se guarda solo el mejor modelo
+  en `app/models/trocr-es/`. El historial queda en `historial.csv`.
+- En cada evaluación también se guarda el punto actual (`ultimo/` y `estado.json`).
+  Si el proceso se corta, `--reanudar` sigue desde ahí. Para detenerlo de forma
+  ordenada se crea un archivo vacío `DETENER` en la carpeta de salida.
+
+Prueba corta (108 renglones, 12 pasos): el CER de validación bajó de 5.5 % a
+3.0 %. Eso confirma que el entrenamiento funciona.
+
+### Resultados del afinado
+
+Entrenamiento completo: 712 pasos (2 épocas), 3.1 horas de cómputo en la CPU de la PC del autor.
+
+![CER de validación y pérdida durante el afinado](docs/afinado_trocr.png)
+
+| Paso | 0 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 712 |
+|---|---|---|---|---|---|---|---|---|---|
+| CER validación (tipografías no vistas) | 11.0 % | 4.9 % | 2.9 % | 2.6 % | 2.1 % | 1.9 % | 1.75 % | **1.66 %** | 1.66 % |
+| Pérdida media | — | 0.57 | 0.35 | 0.17 | 0.19 | 0.15 | 0.12 | 0.07 | 0.05 |
+
+El CER de validación bajó en cada evaluación, sin repuntes, y los renglones de
+validación usan tipografías que el entrenamiento no vio. Eso indica que el
+modelo aprendió el idioma y no memorizó los ejemplos.
+
+**Página real en español, cursiva** (`manuscrita.jpg`, nunca usada para entrenar):
+
+| Modelo | CER | WER | Renglón 1 | Renglón 3 |
+|---|---|---|---|---|
+| TrOCR original | 17.6 % | 63.6 % | " Alabama una vez tresparditos que... | muchory siemprese ayidaban entre. |
+| **TrOCR afinado** | **8.0 %** | **31.8 %** | ¡Había una vez tres carditos que... | mucho y siempre se ayúdaban entre |
+
+**IAM, 150 líneas en inglés** (para ver cuánto se pierde del idioma original):
+
+| Modelo | CER (IC 95 %) | WER (IC 95 %) | Tiempo medio |
+|---|---|---|---|
+| TrOCR original | 1.4 % (0.8–2.1) | 3.5 % (2.3–4.8) | 3.2 s |
+| TrOCR afinado | 3.1 % (2.4–3.9) | 8.5 % (6.7–10.4) | 4.2 s |
+| Qwen vía Groq (nube) | 2.6 % (1.8–3.3) | 6.4 % (4.8–8.1) | — |
+| Tesseract 5.5 | 50.9 % | 87.9 % | 0.6 s |
+
+Lectura: el afinado redujo a menos de la mitad los errores en español y, a
+cambio, perdió algo de exactitud en inglés. Es el efecto esperado al adaptar
+un modelo a otro idioma (olvido parcial). Aun así sigue en el mismo rango que el
+modelo remoto y es 16 veces más preciso por carácter que Tesseract. Como el
+sistema está acotado al español (sección I.A del documento), el modelo afinado
+es el que se usa por defecto.
+
+Limitaciones:
+- La página en español es una sola muestra de 4 renglones. La cifra definitiva
+  saldrá del conjunto propio de varios escritores (`benchmark/datasets/es_manuscrito`).
+- Los tiempos en IAM no son comparables entre sí: durante la medición del modelo
+  afinado había otros procesos usando la CPU.
+- Mejora posible: mezclar renglones reales (SPA-Sentences o el conjunto propio)
+  con los sintéticos, y renglones en inglés para reducir el olvido.
+
+**Cómo se usa:** si existe `BACKEND/app/models/trocr-es/`, el sistema lo carga
+automáticamente. `TROCR_MODEL` en `.env` fuerza otro modelo. La carpeta pesa
+1.3 GB y no se sube al repositorio; para los workers en otras computadoras se
+copia la carpeta o se vuelve a entrenar con `entrenamiento/entrenar.ps1`.
+
 ## Referencias
 
 - M. Li et al., "TrOCR: Transformer-based optical character recognition with pre-trained models," AAAI, 2023.

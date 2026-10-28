@@ -10,6 +10,7 @@ Motores:
   tesseract  -> Tesseract 5, --oem 3 --psm 6, idiomas spa+eng
   groq       -> app.ocr_engine._run_groq_vision (modelo de vision remoto, solo comparacion)
   trocr      -> app.trocr_engine.run_trocr (CRAFT + TrOCR local, motor de manuscrito)
+  trocr-es   -> igual, con el modelo afinado en espanol (app/models/trocr-es)
 
 Uso (desde BACKEND/):
   python -m benchmark.evaluar --dataset benchmark/datasets/iam_lineas --motores easyocr tesseract
@@ -59,9 +60,12 @@ def _cargar_motor(nombre: str):
     if nombre == "groq":
         from app.ocr_engine import _run_groq_vision
         return _run_groq_vision
-    if nombre == "trocr":
-        from app.trocr_engine import run_trocr
-        return run_trocr
+    if nombre in ("trocr", "trocr-es"):
+        from app import trocr_engine
+        # "trocr" es siempre el modelo publicado (inglés) y "trocr-es" el afinado.
+        trocr_engine.TROCR_MODEL = (str(Path(__file__).resolve().parent.parent / "app" / "models" / "trocr-es")
+                                    if nombre == "trocr-es" else "microsoft/trocr-base-handwritten")
+        return trocr_engine.run_trocr
     if nombre == "tesseract":
         import os
         import pytesseract
@@ -86,10 +90,11 @@ def _version_motor(nombre: str) -> str:
         if nombre == "groq":
             from app.ocr_engine import GROQ_MODEL
             return GROQ_MODEL
-        if nombre == "trocr":
+        if nombre in ("trocr", "trocr-es"):
             import transformers
-            from app.trocr_engine import TROCR_BEAMS, TROCR_MODEL
-            return f"{TROCR_MODEL} (beams={TROCR_BEAMS}, transformers {transformers.__version__})"
+            from app import trocr_engine
+            modelo = Path(trocr_engine.TROCR_MODEL).name if nombre == "trocr-es" else trocr_engine.TROCR_MODEL
+            return f"{modelo} (beams={trocr_engine.TROCR_BEAMS}, transformers {transformers.__version__})"
     except Exception:
         pass
     return "?"
@@ -222,7 +227,7 @@ def reporte() -> str:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", type=Path)
-    ap.add_argument("--motores", nargs="+", choices=["easyocr", "tesseract", "groq", "trocr"], default=[])
+    ap.add_argument("--motores", nargs="+", choices=["easyocr", "tesseract", "groq", "trocr", "trocr-es"], default=[])
     ap.add_argument("--pausa-groq", type=float, default=2.5,
                     help="segundos entre peticiones a Groq (limite gratuito ~30 por minuto)")
     ap.add_argument("--reporte", action="store_true")

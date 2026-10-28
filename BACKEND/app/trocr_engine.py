@@ -27,7 +27,11 @@ from PIL import Image, ImageOps
 logger = logging.getLogger("ocr.trocr")
 
 MODEL_DIR = Path(__file__).resolve().parent / "models"
-TROCR_MODEL = os.getenv("TROCR_MODEL", "microsoft/trocr-base-handwritten").strip()
+# Si existe el modelo afinado en español (entrenamiento/afinar_trocr.py) se usa ese;
+# si no, el modelo publicado en inglés. TROCR_MODEL fuerza uno u otro.
+_AFINADO = MODEL_DIR / "trocr-es"
+TROCR_MODEL = os.getenv("TROCR_MODEL", "").strip() or (
+    str(_AFINADO) if (_AFINADO / "model.safetensors").exists() else "microsoft/trocr-base-handwritten")
 # Búsqueda voraz (1 haz) por defecto: en IAM dio el mismo CER que 4 haces en
 # menos de la mitad del tiempo en CPU.
 TROCR_BEAMS = int(os.getenv("TROCR_BEAMS", "1"))
